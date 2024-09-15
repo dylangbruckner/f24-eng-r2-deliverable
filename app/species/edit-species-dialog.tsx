@@ -67,11 +67,11 @@ export default function EditSpeciesDialog({ species }: { species: Species }) {
 
   const defaultValues: Partial<FormData> = {
     scientific_name: species.scientific_name,
-    common_name: species.common_name || null,
+    common_name: species.common_name ?? null,
     kingdom: species.kingdom,
-    total_population: species.total_population || null,
-    image: species.image || null,
-    description: species.description || null,
+    total_population: species.total_population ?? null,
+    image: species.image ?? null,
+    description: species.description ?? null,
   };
 
   // Control open/closed state of the dialog

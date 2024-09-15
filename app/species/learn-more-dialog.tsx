@@ -9,13 +9,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import type { Database } from "@/lib/schema";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 type Species = Database["public"]["Tables"]["species"]["Row"];
 
 export default function LearnMoreDialog({ species }: { species: Species }) {
-  const router = useRouter();
-
   // Control open/closed state of the dialog
   const [open, setOpen] = useState<boolean>(false);
 
