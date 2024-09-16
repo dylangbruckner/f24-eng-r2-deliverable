@@ -132,7 +132,7 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
 
       // Autofill the form fields
       form.setValue("description", data.extract);
-      form.setValue("image", data.thumbnail?.source || "");
+      form.setValue("image", data.thumbnail?.source ?? "");
 
       toast({
         title: "Information found",
@@ -218,7 +218,7 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
         {/* Custom search field and button */}
         <div className="mb-4 flex space-x-2">
           <Input placeholder="Search species name" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-          <Button onClick={handleSearch}>Search</Button>
+          <Button onClick={() => void handleSearch()}>Search</Button>
         </div>
         <Form {...form}>
           <form onSubmit={(e: BaseSyntheticEvent) => void form.handleSubmit(onSubmit)(e)}>
