@@ -31,7 +31,7 @@ export default function LearnMoreDialog({ species }: { species: Species }) {
           </DialogDescription>
         </DialogHeader>
         <p>{species.description}</p>
-        <p>Population: {species.total_population}</p>
+        <p>Population: {species.total_population ?? "Unkown"}</p>
         <p>Kingdom: {species.kingdom}</p>
         <DialogClose asChild>
           <Button type="button" className="ml-1 mr-1 flex-auto" variant="secondary">
