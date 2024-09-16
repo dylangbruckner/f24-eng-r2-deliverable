@@ -304,7 +304,7 @@ export default function EditSpeciesDialog({ species }: { species: Species }) {
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={() => {
-          onDelete();
+          void onDelete();
           setShowDeleteConfirm(false);
         }}
         speciesName={species.scientific_name}
