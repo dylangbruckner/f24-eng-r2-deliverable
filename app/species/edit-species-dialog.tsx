@@ -20,6 +20,8 @@ import { useRouter } from "next/navigation";
 import { useState, type BaseSyntheticEvent } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { DeleteConfirmationDialog } from "./delete-species-dialog";
+
 type Species = Database["public"]["Tables"]["species"]["Row"];
 
 // Define kingdom enum for use in Zod schema and displaying dropdown options in the form
@@ -85,6 +87,31 @@ export default function EditSpeciesDialog({ species }: { species: Species }) {
     values: defaultValues as FormData,
   });
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // function to delete the element
+  const onDelete = async () => {
+    // creates the browser client and deletes the species entry
+    const supabase = createBrowserSupabaseClient();
+    const { error } = await supabase.from("species").delete().eq("id", species.id);
+
+    if (error) {
+      return toast({
+        title: "Something went wrong.",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+
+    setOpen(false);
+    router.refresh();
+
+    return toast({
+      title: "Species deleted.",
+      description: "Successfully deleted species.",
+    });
+  };
+
   const onSubmit = async (input: FormData) => {
     // The `input` prop contains data that has already been processed by zod. We can now use it in a supabase query
     const supabase = createBrowserSupabaseClient();
@@ -121,148 +148,167 @@ export default function EditSpeciesDialog({ species }: { species: Species }) {
     });
   };
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="mt-3 w-full">Edit Species</Button>
-      </DialogTrigger>
-      <DialogContent className="max-h-screen overflow-y-auto sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>
-            <h3 className="mt-3 text-2xl font-semibold">Edit {species.scientific_name}</h3>
-          </DialogTitle>
-          <DialogDescription>
-            Make changes to this species information. Click &quot;Finish Editing&quot; below when you&apos;re done.
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={(e: BaseSyntheticEvent) => void form.handleSubmit(onSubmit)(e)}>
-            <div className="grid w-full items-center gap-4">
-              <FormField
-                control={form.control}
-                name="scientific_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Scientific Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="common_name"
-                render={({ field }) => {
-                  // We must extract value from field and convert a potential defaultValue of `null` to "" because inputs can't handle null values: https://github.com/orgs/react-hook-form/discussions/4091
-                  const { value, ...rest } = field;
-                  return (
+    <>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button className="mt-3 w-full">Edit Species</Button>
+        </DialogTrigger>
+        <DialogContent className="max-h-screen overflow-y-auto sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>
+              <h3 className="mt-3 text-2xl font-semibold">Edit {species.scientific_name}</h3>
+            </DialogTitle>
+            <DialogDescription>
+              Make changes to this species information. Click &quot;Finish Editing&quot; below when you&apos;re done.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={(e: BaseSyntheticEvent) => void form.handleSubmit(onSubmit)(e)}>
+              <div className="grid w-full items-center gap-4">
+                <FormField
+                  control={form.control}
+                  name="scientific_name"
+                  render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Common Name</FormLabel>
+                      <FormLabel>Scientific Name</FormLabel>
                       <FormControl>
-                        <Input value={value ?? ""} {...rest} />
+                        <Input {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
-                  );
-                }}
-              />
-              <FormField
-                control={form.control}
-                name="kingdom"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Kingdom</FormLabel>
-                    <Select onValueChange={(value) => field.onChange(kingdoms.parse(value))} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a kingdom" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectGroup>
-                          {kingdoms.options.map((kingdom, index) => (
-                            <SelectItem key={index} value={kingdom}>
-                              {kingdom}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="total_population"
-                render={({ field }) => {
-                  const { value, ...rest } = field;
-                  return (
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="common_name"
+                  render={({ field }) => {
+                    // We must extract value from field and convert a potential defaultValue of `null` to "" because inputs can't handle null values: https://github.com/orgs/react-hook-form/discussions/4091
+                    const { value, ...rest } = field;
+                    return (
+                      <FormItem>
+                        <FormLabel>Common Name</FormLabel>
+                        <FormControl>
+                          <Input value={value ?? ""} {...rest} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+                <FormField
+                  control={form.control}
+                  name="kingdom"
+                  render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Total population</FormLabel>
-                      <FormControl>
-                        {/* Using shadcn/ui form with number: https://github.com/shadcn-ui/ui/issues/421 */}
-                        <Input
-                          type="number"
-                          value={value ?? ""}
-                          {...rest}
-                          onChange={(event) => field.onChange(+event.target.value)}
-                        />
-                      </FormControl>
+                      <FormLabel>Kingdom</FormLabel>
+                      <Select onValueChange={(value) => field.onChange(kingdoms.parse(value))} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a kingdom" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectGroup>
+                            {kingdoms.options.map((kingdom, index) => (
+                              <SelectItem key={index} value={kingdom}>
+                                {kingdom}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
-                  );
-                }}
-              />
-              <FormField
-                control={form.control}
-                name="image"
-                render={({ field }) => {
-                  // We must extract value from field and convert a potential defaultValue of `null` to "" because inputs can't handle null values: https://github.com/orgs/react-hook-form/discussions/4091
-                  const { value, ...rest } = field;
-                  return (
-                    <FormItem>
-                      <FormLabel>Image URL</FormLabel>
-                      <FormControl>
-                        <Input value={value ?? ""} {...rest} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  );
-                }}
-              />
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => {
-                  // We must extract value from field and convert a potential defaultValue of `null` to "" because textareas can't handle null values: https://github.com/orgs/react-hook-form/discussions/4091
-                  const { value, ...rest } = field;
-                  return (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea value={value ?? ""} {...rest} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  );
-                }}
-              />
-              <div className="flex">
-                <Button type="submit" className="ml-1 mr-1 flex-auto">
-                  Finish Editing
-                </Button>
-                <DialogClose asChild>
-                  <Button type="button" className="ml-1 mr-1 flex-auto" variant="secondary">
-                    Cancel
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="total_population"
+                  render={({ field }) => {
+                    const { value, ...rest } = field;
+                    return (
+                      <FormItem>
+                        <FormLabel>Total population</FormLabel>
+                        <FormControl>
+                          {/* Using shadcn/ui form with number: https://github.com/shadcn-ui/ui/issues/421 */}
+                          <Input
+                            type="number"
+                            value={value ?? ""}
+                            {...rest}
+                            onChange={(event) => field.onChange(+event.target.value)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+                <FormField
+                  control={form.control}
+                  name="image"
+                  render={({ field }) => {
+                    // We must extract value from field and convert a potential defaultValue of `null` to "" because inputs can't handle null values: https://github.com/orgs/react-hook-form/discussions/4091
+                    const { value, ...rest } = field;
+                    return (
+                      <FormItem>
+                        <FormLabel>Image URL</FormLabel>
+                        <FormControl>
+                          <Input value={value ?? ""} {...rest} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => {
+                    // We must extract value from field and convert a potential defaultValue of `null` to "" because textareas can't handle null values: https://github.com/orgs/react-hook-form/discussions/4091
+                    const { value, ...rest } = field;
+                    return (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea value={value ?? ""} {...rest} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+                <div className="flex">
+                  <Button type="submit" className="ml-1 mr-1 flex-auto">
+                    Finish Editing
                   </Button>
-                </DialogClose>
+                  <Button
+                    type="button"
+                    className="ml-1 mr-1 flex-auto"
+                    variant="destructive"
+                    onClick={() => setShowDeleteConfirm(true)}
+                  >
+                    Delete
+                  </Button>
+                  <DialogClose asChild>
+                    <Button type="button" className="ml-1 mr-1 flex-auto" variant="secondary">
+                      Cancel
+                    </Button>
+                  </DialogClose>
+                </div>
               </div>
-            </div>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      <DeleteConfirmationDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={() => {
+          onDelete();
+          setShowDeleteConfirm(false);
+        }}
+        speciesName={species.scientific_name}
+      />
+    </>
   );
 }

@@ -80,6 +80,75 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
   // Control open/closed state of the dialog
   const [open, setOpen] = useState<boolean>(false);
 
+  // typing for the widkipedia response
+  interface WikipediaResponse {
+    type: string;
+    extract?: string;
+    thumbnail?: {
+      source: string;
+    };
+  }
+
+  // Search form
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const handleSearch = async () => {
+    // if search is empty, don't return anything
+    if (!searchTerm) {
+      toast({
+        title: "No search term",
+        description: "Please enter the name of the species you would like to add.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // request to the wikapedia API
+      const response = await fetch(
+        `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(searchTerm)}`,
+      );
+      const data = (await response.json()) as WikipediaResponse;
+
+      // if there were many results, gives a warning
+      if (data.type === "disambiguation") {
+        toast({
+          title: "Ambiguous search term",
+          description: "Please provide a more specific species name.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // if there were no results, gives a warning
+      if (!data.extract) {
+        toast({
+          title: "No information found",
+          description: "Unable to find information for the given species.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Autofill the form fields
+      form.setValue("description", data.extract);
+      form.setValue("image", data.thumbnail?.source || "");
+
+      toast({
+        title: "Information found",
+        description: "Description and image fields have been autofilled.",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Error fetching Wikipedia data:", error);
+      toast({
+        title: "Error",
+        description: "An error occurred while fetching information.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Instantiate form functionality with React Hook Form, passing in the Zod schema (for validation) and default values
   const form = useForm<FormData>({
     resolver: zodResolver(speciesSchema),
@@ -141,9 +210,16 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
         <DialogHeader>
           <DialogTitle>Add Species</DialogTitle>
           <DialogDescription>
-            Add a new species here. Click &quot;Add Species&quot; below when you&apos;re done.
+            Add a new species here. Click &quot;Add Species&quot; below when you&apos;re done. Or, search for
+            information to autofill some fields.
           </DialogDescription>
         </DialogHeader>
+
+        {/* Custom search field and button */}
+        <div className="mb-4 flex space-x-2">
+          <Input placeholder="Search species name" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          <Button onClick={handleSearch}>Search</Button>
+        </div>
         <Form {...form}>
           <form onSubmit={(e: BaseSyntheticEvent) => void form.handleSubmit(onSubmit)(e)}>
             <div className="grid w-full items-center gap-4">
